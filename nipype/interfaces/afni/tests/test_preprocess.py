@@ -3,17 +3,88 @@
 import warnings
 warnings.simplefilter('ignore')
 from nipype.testing import *
+import tempfile
+import shutil
 
 from nipype.interfaces import afni
 from nipype.interfaces.base import InterfaceResult
 
-def afni_not_installed():
+def no_afni():
     ''' XXX: This test assumes that AFNI.Info.version will not crash on a system without AFNI installed'''
     if afni.Info.version is None:
         return True
     else:
         return False
 
+
+tmp_infile = None
+tmp_indir = None
+
+#@skipif(no_afni)
+def setup_infile():
+    global tmp_infile, tmp_indir
+    ext = afni.Info.outputtype_to_ext(afni.Info.outputtype())
+    tmp_indir = tempfile.mkdtemp()
+    tmp_infile = os.path.join(tmp_indir, 'foo' + ext)
+    file(tmp_infile, 'w')
+    return tmp_infile, tmp_indir
+
+def teardown_infile(tmp_indir):
+    shutil.rmtree(tmp_indir)
+
+'''
+#@skipif(no_afni)
+def test_To3d():
+    tmp_infile, tmp_indir = setup_infile()
+    to3d = afni.To3d()
+    to3d.inputs.verbose = True
+
+    to3d = afni.To3d()
+    to3d.inputs.in_files = tmp_infile
+    yield assert_equal, to3d.cmdline, 'to3d %s'%(tmp_infile)
+    to3d.inputs.in_files = [tmp_infile, tmp_infile]
+    yield assert_equal, to3d.cmdline, 'to3d %s %s'%(tmp_infile, tmp_infile)
+
+    # Our options and some test values for them
+    # Should parallel the opt_map structure in the class for clarity
+    opt_map = {'number_classes':       ('-n 4', 4),
+               'bias_iters':           ('-I 5', 5),
+               'bias_lowpass':         ('-l 15', 15),
+               'img_type':             ('-t 2', 2),
+               'init_seg_smooth':      ('-f 0.035', 0.035),
+               'segments':             ('-g', True),
+               'init_transform':       ('-a %s'%(tmp_infile), '%s'%(tmp_infile)),
+               'other_priors':         ('-A %s %s %s'%(tmp_infile, tmp_infile,
+                                                       tmp_infile),
+                                        (['%s'%(tmp_infile),
+                                          '%s'%(tmp_infile),
+                                          '%s'%(tmp_infile)])),
+               'no_pve':                ('--nopve', True),
+               'output_biasfield':     ('-b', True),
+               'output_biascorrected': ('-B', True),
+               'no_bias':               ('-N', True),
+               'out_basename':         ('-o to3d_1', 'to3d_1'),
+               'use_priors':           ('-P', True),
+               'segment_iters':        ('-W 14', 14),
+               'mixel_smooth':         ('-R 0.25', 0.25),
+               'iters_afterbias':      ('-O 3', 3),
+               'hyper':                ('-H 0.15', 0.15),
+               'verbose':              ('-v', True),
+               'manual_seg':            ('-s %s'%(tmp_infile),
+                       '%s'%(tmp_infile)),
+               'probability_maps':     ('-p', True),
+              }
+
+    # test each of our arguments
+    for name, settings in opt_map.items():
+        to3d = afni.To3d(in_files=tmp_infile, **{name: settings[1]})
+        yield assert_equal, to3d.cmdline, ' '.join([to3d.cmd,
+                                                      settings[0],
+                                                      tmp_infile])
+    teardown_infile(tmp_indir)
+'''
+
+'''
 def test_To3dInputSpec():
     inputs_map = dict(infolder = dict(argstr= '%s/*.dcm',
                                   position = -1,
@@ -36,6 +107,8 @@ def test_To3dInputSpec():
     for key, metadata in inputs_map.items():
         for metakey, value in metadata.items():
             yield assert_equal, getattr(instance.inputs.traits()[key], metakey), value
+'''
+
 
 '''XXX: This test is broken.  output_spec does not appear to have the out_file attribute the same way that inputs does
 def test_To3dOutputSpec():
@@ -47,6 +120,51 @@ def test_To3dOutputSpec():
 '''
 
 
+
+def test_Threedrefit():
+    tmp_infile, tmp_indir = setup_infile()
+
+    Threedrefit = afni.Threedrefit()
+    Threedrefit.inputs.infile = tmp_infile
+    yield assert_equal, Threedrefit.cmdline, '3drefit %s'%(tmp_infile)
+
+    # Our options and some test values for them
+    # Should parallel the opt_map structure in the class for clarity
+    opt_map = {'deoblique': ('-deoblique', True),
+               'xorigin':   ('-xorigin cen', 'cen'),
+               'yorigin':   ('-yorigin cen', 'cen'),
+               'zorigin':   ('-zorigin cen', 'cen')}
+
+    # test each of our arguments
+    for name, settings in opt_map.items():
+        Threedrefit = afni.Threedrefit(infile=tmp_infile, **{name: settings[1]})
+        yield assert_equal, Threedrefit.cmdline, ' '.join([Threedrefit.cmd,
+                                                      settings[0],
+                                                      tmp_infile])
+    teardown_infile(tmp_indir)
+
+
+def test_Threedresample():
+    tmp_infile, tmp_indir = setup_infile()
+    tmp_outfile = 'foo-RPI.nii.gz'
+
+    Threedresample = afni.Threedresample()
+    Threedresample.inputs.infile = tmp_infile
+    yield assert_equal, Threedresample.cmdline, '3dresample %s'%(tmp_infile)
+
+    # Our options and some test values for them
+    # Should parallel the opt_map structure in the class for clarity
+    opt_map = {'orientation': ('-orient RPI', 'RPI')}
+
+    # test each of our arguments
+    for name, settings in opt_map.items():
+        Threedresample = afni.Threedresample(infile=tmp_infile, **{name: settings[1]})
+        yield assert_equal, Threedresample.cmdline, ' '.join([Threedresample.cmd,
+                                                      settings[0], tmp_outfile, tmp_infile])
+    teardown_infile(tmp_indir)
+
+
+"""
 def test_ThreedrefitInputSpec():
     inputs_map = dict(infile = dict(desc = 'input file to 3drefit',
                                     argstr = '%s',
@@ -532,5 +650,5 @@ def test_Threedmerge():
     cmd = afni.Threedmerge()
     res = cmd.run(infiles='foo.nii')
     yield assert_true, isinstance(res, InterfaceResult)
-
+"""
 
