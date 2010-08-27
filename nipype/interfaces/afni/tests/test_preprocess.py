@@ -124,8 +124,7 @@ def test_To3dOutputSpec():
 def test_Threedrefit():
     tmp_infile, tmp_indir = setup_infile()
 
-    Threedrefit = afni.Threedrefit()
-    Threedrefit.inputs.infile = tmp_infile
+    Threedrefit = afni.Threedrefit(infile = tmp_infile)
     yield assert_equal, Threedrefit.cmdline, '3drefit %s'%(tmp_infile)
 
     # Our options and some test values for them
@@ -137,7 +136,7 @@ def test_Threedrefit():
 
     # test each of our arguments
     for name, settings in opt_map.items():
-        Threedrefit = afni.Threedrefit(infile=tmp_infile, **{name: settings[1]})
+        Threedrefit = afni.Threedrefit(infile = tmp_infile, **{name: settings[1]})
         yield assert_equal, Threedrefit.cmdline, ' '.join([Threedrefit.cmd,
                                                       settings[0],
                                                       tmp_infile])
@@ -148,9 +147,11 @@ def test_Threedresample():
     tmp_infile, tmp_indir = setup_infile()
     tmp_outfile = 'foo-RPI.nii.gz'
 
-    Threedresample = afni.Threedresample()
-    Threedresample.inputs.infile = tmp_infile
-    yield assert_equal, Threedresample.cmdline, '3dresample %s'%(tmp_infile)
+    Threedresample = afni.Threedresample(infile = tmp_infile,
+                                         outfile = tmp_outfile)
+    yield assert_equal, Threedresample.cmdline, ' '.join(['3dresample',
+                                                          '-prefix', tmp_outfile,
+                                                          '-inset', tmp_infile])
 
     # Our options and some test values for them
     # Should parallel the opt_map structure in the class for clarity
@@ -158,9 +159,13 @@ def test_Threedresample():
 
     # test each of our arguments
     for name, settings in opt_map.items():
-        Threedresample = afni.Threedresample(infile=tmp_infile, **{name: settings[1]})
+        Threedresample = afni.Threedresample(infile = tmp_infile,
+                                             outfile = tmp_outfile,
+                                             **{name: settings[1]})
         yield assert_equal, Threedresample.cmdline, ' '.join([Threedresample.cmd,
-                                                      settings[0], tmp_outfile, tmp_infile])
+                                                              settings[0],
+                                                              '-prefix', tmp_outfile,
+                                                              '-inset', tmp_infile])
     teardown_infile(tmp_indir)
 
 

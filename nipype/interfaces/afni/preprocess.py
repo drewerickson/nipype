@@ -99,8 +99,8 @@ class ThreedrefitInputSpec(AFNITraitedSpec):
                          argstr = '-xorigin %s')
     yorigin = traits.Str(desc = 'y distance for edge voxel offset',
                          argstr = '-yorigin %s')
-    zorigin = traits.Str(desc = 'y distance for edge voxel offset',
-                         argstr = '-yorigin %s')
+    zorigin = traits.Str(desc = 'z distance for edge voxel offset',
+                         argstr = '-zorigin %s')
 
 class ThreedrefitOutputSpec(AFNITraitedSpec):
     out_file = File(desc = 'Same file as original infile with modified matrix',
